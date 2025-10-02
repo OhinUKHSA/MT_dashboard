@@ -91,7 +91,8 @@ fluidPage(
                  plotOutput("plot")),
         tabPanel('Compliance Table',
                  numericInput('filterDates', 'How many Quarters to Show:', min = 1, max = 6, value = 6),
-                 formattableOutput('formattable_Table')
+                 # formattableOutput('formattable_Table')
+                 tableOutput('MT_basicTable')
         ),
         tabPanel('Safeguarding',
                  conditionalPanel(

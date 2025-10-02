@@ -61,7 +61,7 @@ function(input, output, session) {
   
   observeEvent(tidy_data(), {
     req(tidy_data())
-
+    
     updateNumericInput(
       session,
       "filterDates",
@@ -102,7 +102,7 @@ function(input, output, session) {
       mutate(Date_time = factor(Date)) %>%
       select(Date_time, everything(), -Date) %>%
       rename(Date = Date_time)
-
+    
     
     
     
@@ -111,7 +111,7 @@ function(input, output, session) {
   
   # Create Figure -----------------------------------------------------------
   
-
+  
   
   output$plot <- renderPlot({
     req(summarisedTable())
@@ -165,7 +165,7 @@ function(input, output, session) {
   ##############
   
   # Create Table ------------------------------------------------------------
-
+  
   MT_Table = reactive({
     req(tidy_data())
     
@@ -181,55 +181,44 @@ function(input, output, session) {
     
   })
   
-
-  # Render Formattable table ------------------------------------------------
-
-  # output$formattable_Table = renderFormattable({
-  #   req(MT_Table())
-  #   
-  #   # Define color formatting conditions with text centered
-  #   color_formatter <- formatter(
-  #     "span",
-  #     style = x ~ style(
-  #       display = "block",
-  #       "border-radius" = "4px",
-  #       "padding-right" = "4px",
-  #       "text-align" = "center",  # Center the text in the cells
-  #       background = ifelse(as.numeric(sub("%", "", x)) > 85, "green",
-  #                           ifelse(as.numeric(sub("%", "", x)) >= 70 & as.numeric(sub("%", "", x)) <= 85, "orange", "red")),
-  #       color = "white"  # To ensure text is visible
-  #     )
-  #   )
-  #   
-  #   # Apply the formatting to each column manually (except the Training column)
-  #   formattable(
-  #     MT_Table(), 
-  #     setNames(
-  #       rep(list(color_formatter), ncol(MT_Table()) - 1),  # Repeat the formatter for each applicable column
-  #       names(MT_Table())[-1]  # Exclude the first column (Training)
-  #     )
-  #   )
-  # })
   
-
-# render basic table ------------------------------------------------------
-
-  output$MT_basicTable = renderTable({
+  # Render Formattable table ------------------------------------------------
+  
+  output$formattable_Table = renderFormattable({
     req(MT_Table())
     
-    MT_Table()
-   
+    # Define color formatting conditions with text centered
+    color_formatter <- formatter(
+      "span",
+      style = x ~ style(
+        display = "block",
+        "border-radius" = "4px",
+        "padding-right" = "4px",
+        "text-align" = "center",  # Center the text in the cells
+        background = ifelse(as.numeric(sub("%", "", x)) > 85, "green",
+                            ifelse(as.numeric(sub("%", "", x)) >= 70 & as.numeric(sub("%", "", x)) <= 85, "orange", "red")),
+        color = "white"  # To ensure text is visible
+      )
+    )
     
-  })  
+    # Apply the formatting to each column manually (except the Training column)
+    formattable(
+      MT_Table(), 
+      setNames(
+        rep(list(color_formatter), ncol(MT_Table()) - 1),  # Repeat the formatter for each applicable column
+        names(MT_Table())[-1]  # Exclude the first column (Training)
+      )
+    )
+  })
   
-
+  
   ################
   # Safeguarding #
   ################
   
-
-# Create reactive summary table -------------------------------------------
-
+  
+  # Create reactive summary table -------------------------------------------
+  
   SafeguardTable = reactive({
     req(tidy_data())
     
@@ -245,9 +234,9 @@ function(input, output, session) {
       ))
   })
   
-
+  
   # render table ------------------------------------------------------------
-
+  
   output$SafeguardTable_Render = renderTable({
     req(SafeguardTable())
     
@@ -256,7 +245,7 @@ function(input, output, session) {
   })
   
   # Render safeguardPlot ----------------------------------------------------
-
+  
   
   output$plot_SLA <- renderPlot({
     req(SafeguardTable())
