@@ -1,0 +1,34 @@
+# --- R / RStudio ---
+.Rproj.user/
+.Rhistory
+.RData
+.Ruserdata
+
+# --- Quarto / Rmd build artefacts ---
+*_files/
+*_cache/
+_freeze/
+_site/
+_book/
+.Rcache/
+.quarto/
+**/lib/
+**/libs/
+*.utf8.md
+*.knit.md
+
+# --- Data snapshots you don't want in git ---
+data/old_data/
+
+# --- Ignore all CSVs, except the one we want to keep ---
+*.csv
+!data/test data/dummy data.csv
+
+# --- Ignore all Excel files, except the template ---
+*.xlsx
+*.xls
+!Themes_Template.xlsx
+
+# --- Other outputs you don't need in git ---
+*.html
+
