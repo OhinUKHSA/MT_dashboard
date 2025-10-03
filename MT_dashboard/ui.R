@@ -95,12 +95,23 @@ fluidPage(
                  tableOutput('MT_basicTable')
         ),
         tabPanel('Safeguarding',
+                 numericInput('filterDates_SG', 'How many Quarters to Show:', min = 1, max = 6, value = 6),
                  conditionalPanel(
                    tags$h2('Summary Table'),
                    condition = "input.show_table == true",
                    div(style = "margin-top:20px;", tableOutput("SafeguardTable_Render"))
                  ),
-                 plotOutput("plot_SLA")
+                 plotOutput("plot_SG")
+                 ),
+        tabPanel('MT per Training',
+                 selectInput('Training_Course', label = 'Select Training', choices = 'Input Data', selected = 'Input Data'),
+                 
+                 # conditionalPanel(
+                 #   tags$h2('Summary Table'),
+                 #   condition = "input.show_table == true",
+                 #   div(style = "margin-top:20px;", tableOutput("SafeguardTable_Render"))
+                 # ),
+                 plotOutput("MT_trainingPlot")
                  )
         )
       )

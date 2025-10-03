@@ -68,6 +68,22 @@ function(input, output, session) {
       max   = length(unique(sort(tidy_data()$Date))),
       value = length(unique(sort(tidy_data()$Date)))
     )
+    
+    updateNumericInput(
+      session,
+      "filterDates_SG",
+      max   = length(unique(sort(tidy_data()$Date))),
+      value = length(unique(sort(tidy_data()$Date)))
+    )
+    
+    
+    updateSelectInput(
+      session,
+      'Training_Course',
+      choices = unique(tidy_data()$Training)
+    )
+    
+    
   })
   
   
@@ -111,52 +127,79 @@ function(input, output, session) {
   
   # Create Figure -----------------------------------------------------------
   
-
-  
-  output$plot <- renderPlot({
+  output$plot = renderPlot({
     req(summarisedTable())
-    df <- summarisedTable()
+
+    # Get last 6 unique dates in order and lock them as factor levels
+    last6 = tail(sort(unique(summarisedTable()$Date)),6)
     
-    summarisedTable() %>%
-      filter(Date %in% tail(unique(sort(.$Date)), 6)) %>%
-      mutate(Date = factor(Date)) %>%
-      
-      
-      ggplot(aes(x = Training, y = Complicance, fill = Date)) +  
-      geom_col(position = position_dodge2(width = 0.8, preserve = "single"), width = 0.7) +  
-      
+    df = summarisedTable() %>%
+      filter(Date %in% last6) %>%
+      mutate(Date = factor(Date, levels = last6))
+    
+    # Prebuild legend labels using real Date objects (avoids format.default warning)
+    legend_labels = paste0(
+      as.character(yearquarter(last6, fiscal_start = 4)),
+      " (", format(last6, "%b"), ")"
+    )
+    
+    # set standard position (dodge for columns and geom_labels)
+    pos = position_dodge2(width = 0.7, preserve = "single", padding = 0)
+    
+    # Create Figure
+    df %>%
+      ggplot(aes(x = Training, y = Complicance, fill = Date)) +
+      geom_col(position = pos, width = 0.7) +
+      # Labels inside bars, halfway down each column
+      geom_label(
+        aes(
+          y = Complicance / 2,
+          label = paste0(Complicance, "%"),
+          group = Date               
+        ),
+        position   = pos, 
+        colour     = "black",
+        fill       = "white",
+        label.size = 0,
+        angle      = 90,
+        size       = input$textsize,
+        show.legend = FALSE
+      ) +
+      # Inline annotations for thresholds
       geom_hline(yintercept = 85, linetype = "dashed", color = "darkgreen", size = 1) +
       geom_hline(yintercept = 70, linetype = "dashed", color = "#CC6600", size = 1) +
+      annotate("text", x = Inf, y = 85, label = "85% Compliance",
+               vjust = -0.5, hjust = 1, color = "darkgreen", fontface = "bold") +
+      annotate("text", x = Inf, y = 70, label = "70% Compliance",
+               vjust = 1.5, hjust = 1, color = "#CC6600", fontface = "bold") +
       
-      geom_text(aes(label = paste0(Complicance, "%")), 
-                position = position_dodge2(width = 0.8, preserve = "single"), 
-                vjust = -0.5, size = input$textsize) +
-      
-      annotate("text", x = Inf, y = 85, label = "85% Compliance", vjust = -0.5, hjust = 1, color = "darkgreen", fontface = "bold") +
-      annotate("text", x = Inf, y = 70, label = "70% Compliance", vjust = 1.5, hjust = 1, color = "#CC6600", fontface = "bold") +
-      
-      # Use scale_fill_discrete and set legend labels only
-      scale_fill_discrete_af( 'main6',
-                              name = "Date",
-                              labels = paste0(as.character(yearquarter(unique(df$Date), fiscal_start = 4)),
-                                              ' (', format(unique(df$Date), "%b"), ')')
+      # Palette + legend labels
+      scale_fill_discrete_af(
+        'main6',
+        name   = "Date",
+        labels = legend_labels
       ) +
+      
       labs(
         title    = input$figureTitle,
         subtitle = input$subHeadingTitle,
         caption  = input$captionTitle,
         x        = "Training",
-        y = "Compliance (%)",
+        y        = "Compliance (%)",
         fill     = input$LegendTitle
       ) +
       theme_af() +
-      theme(axis.text.x = element_text(angle = 30, hjust = 1, size = 10), 
-            axis.text.y = element_text(size = 10),
-            axis.title.y = element_text(angle = 90),
-            legend.title = element_text(face = "bold"),
-            legend.text = element_text(size = 8)) +
-      ylim(0, 100)
+      theme(
+        axis.text.x  = element_text(angle = 30, hjust = 1, size = 10),
+        axis.text.y  = element_text(size = 10),
+        axis.title.y = element_text(angle = 90),
+        legend.title = element_text(face = "bold"),
+        legend.text  = element_text(size = 8)
+      ) +
+      coord_cartesian(ylim = c(0, 100))
+    
   }, height = function() input$plotheight, width = function() input$plotwidth)
+  
   
   
   
@@ -182,36 +225,6 @@ function(input, output, session) {
   })
   
 
-  # Render Formattable table ------------------------------------------------
-
-  # output$formattable_Table = renderFormattable({
-  #   req(MT_Table())
-  #   
-  #   # Define color formatting conditions with text centered
-  #   color_formatter <- formatter(
-  #     "span",
-  #     style = x ~ style(
-  #       display = "block",
-  #       "border-radius" = "4px",
-  #       "padding-right" = "4px",
-  #       "text-align" = "center",  # Center the text in the cells
-  #       background = ifelse(as.numeric(sub("%", "", x)) > 85, "green",
-  #                           ifelse(as.numeric(sub("%", "", x)) >= 70 & as.numeric(sub("%", "", x)) <= 85, "orange", "red")),
-  #       color = "white"  # To ensure text is visible
-  #     )
-  #   )
-  #   
-  #   # Apply the formatting to each column manually (except the Training column)
-  #   formattable(
-  #     MT_Table(), 
-  #     setNames(
-  #       rep(list(color_formatter), ncol(MT_Table()) - 1),  # Repeat the formatter for each applicable column
-  #       names(MT_Table())[-1]  # Exclude the first column (Training)
-  #     )
-  #   )
-  # })
-  
-
 # render basic table ------------------------------------------------------
 
   output$MT_basicTable = renderTable({
@@ -234,7 +247,8 @@ function(input, output, session) {
     req(tidy_data())
     
     tidy_data() %>% 
-      filter(Training == 'Safeguarding') %>%
+      filter(Training == 'Safeguarding',
+             Date %in% tail(unique(sort(.$Date)), input$filterDates_SG)) %>%
       pivot_longer(
         cols = 2:(length(.)-1),
         names_to = 'Employee.Type',
@@ -258,7 +272,7 @@ function(input, output, session) {
   # Render safeguardPlot ----------------------------------------------------
 
   
-  output$plot_SLA <- renderPlot({
+  output$plot_SG <- renderPlot({
     req(SafeguardTable())
     # plot
     ggplot() +
@@ -309,7 +323,57 @@ function(input, output, session) {
   }, height = function() input$plotheight, width = function() input$plotwidth)
   
   
+  #####################
+  # MT - Per Training #
+  #####################
   
+  output$MT_trainingPlot = renderPlot({
+    req(tidy_data())
+    
+    
+    tidy_data() %>% 
+      filter(Training == input$Training_Course,
+             Date %in% tail(unique(sort(.$Date)), 6)) %>%
+      select(Training, Complicance, Date) %>%
+      rename(Compliance = Complicance) %>%
+      mutate(Date = yearquarter(Date, fiscal_start = 4),
+             .x_lab = paste0("Q", quarter(Date, fiscal_start = 4), ' ', year(Date) %% 100, '/', year(Date) %% 100 + 1)) %>%
+      ggplot(aes(.x_lab, Compliance)) +
+      geom_col(fill = af_colour_values["dark-blue"]) +
+      # Inline annotations for thresholds
+      geom_hline(yintercept = 85, linetype = "dashed", color = "darkgreen", size = 1) +
+      geom_hline(yintercept = 70, linetype = "dashed", color = "#CC6600", size = 1) +
+      annotate("text", x = Inf, y = 85, label = "85% Compliance", , size = 6,
+               vjust = -0.5, hjust = 1, color = "darkgreen", fontface = "bold") +
+      annotate("text", x = Inf, y = 70, label = "70% Compliance", size = 6,
+               vjust = 1.5, hjust = 1, color = "#CC6600", fontface = "bold") +
+      theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+      theme_af(legend = 'bottom') +
+      theme(axis.text.x = element_text(angle = 30, hjust = 1, size = 10), 
+            axis.text.y = element_text(size = 10),
+            axis.title.y = element_text(angle = 90),
+            legend.title = element_text(face = "bold"),
+            legend.text = element_text(size = 15)) +
+      geom_label(
+        aes(
+          label = paste0(Compliance, "%"),
+        ),
+        colour     = "black",
+        fill       = "white",
+        size       = input$textsize,
+        show.legend = FALSE
+      ) +
+      labs(
+        x = 'Date',
+        y = 'Compliance (%)' ,
+        title    = input$figureTitle,
+        subtitle = input$subHeadingTitle,
+        caption  = input$captionTitle,
+      ) +
+      coord_cartesian(ylim = c(0, 100))
+    
+    
+  }, height = function() input$plotheight, width = function() input$plotwidth)
   
   
   

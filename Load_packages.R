@@ -16,7 +16,7 @@ options(repos = c(CRAN = "https://cloud.r-project.org"))
 # (Dependencies like rlang/scales come in automatically via tidyverse/ggplot2)
 
 packages = c(
-  "formattable",      # dynamic tables
+  # "formattable",      # dynamic tables
   "tidyverse",  # tidy data.
   "readxl",     # read_excel for .xls/.xlsx
   "afcharts",   # standardise figures
